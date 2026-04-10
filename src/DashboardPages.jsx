@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import DobInput from './components/DobInput';
 
 /* ── Icons ── */
 const Icon = ({ path, fill = "none", size = 20 }) => (
@@ -204,18 +205,11 @@ export const PersonalDetailsTab = ({ profileData, updateProfile }) => {
                             />
                         </div>
                     </div>
-                    <div className="field-group">
-                        <label className="field-label">Date of Birth</label>
-                        <div className="field-input-wrapper">
-                            <div className="field-icon"><CalendarIcon /></div>
-                            <input 
-                                type="date" 
-                                className="field-input with-icon" 
-                                value={profileData.dob || ''} 
-                                onChange={(e) => updateProfile('dob', e.target.value)} 
-                            />
-                        </div>
-                    </div>
+                    <DobInput 
+                        value={profileData.dob}
+                        onChange={(date) => updateProfile('dob', date)}
+                        required={false}
+                    />
                     <div className="field-group">
                         <label className="field-label">Religion</label>
                         <select 
@@ -584,8 +578,7 @@ export const GuardianDetailsTab = ({ profileData, updateProfile }) => {
 /* ═══════════════════════════════════════════════
    PAGE: Personal Documents
    ═══════════════════════════════════════════════ */
-export const PersonalDocumentsPage = () => {
-    const [documents, setDocuments] = useState([]);
+export const PersonalDocumentsPage = ({ documents = [], setDocuments }) => {
     const [dragActive, setDragActive] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
     const fileInputRef = useRef(null);
@@ -727,9 +720,8 @@ export const PersonalDocumentsPage = () => {
 /* ═══════════════════════════════════════════════
    PAGE: Academic Information (List)
    ═══════════════════════════════════════════════ */
-export const AcademicInformationPage = ({ onAddClick }) => {
+export const AcademicInformationPage = ({ records = [], onAddClick }) => {
     const [search, setSearch] = useState('');
-    const [records] = useState([]);
 
     return (
         <div className="page-container fade-in">
@@ -789,7 +781,7 @@ export const AcademicInformationPage = ({ onAddClick }) => {
 /* ═══════════════════════════════════════════════
    PAGE: Add Academic Information (Form)
    ═══════════════════════════════════════════════ */
-export const AddAcademicInfoPage = ({ onCancel }) => {
+export const AddAcademicInfoPage = ({ onCancel, onSave }) => {
     const [gradingSystem, setGradingSystem] = useState('marks');
     const [uploadedDocs, setUploadedDocs] = useState([]);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -798,6 +790,26 @@ export const AddAcademicInfoPage = ({ onCancel }) => {
 
     const handleDrag = (e) => { e.preventDefault(); e.stopPropagation(); setDragActive(e.type === 'dragenter' || e.type === 'dragover'); };
     const handleDrop = (e) => { e.preventDefault(); setDragActive(false); if (e.dataTransfer.files[0]) setSelectedFile(e.dataTransfer.files[0]); };
+
+    const handleFinalSave = () => {
+        const record = {
+            authority: document.getElementById('acad-authority')?.value || '',
+            institute: document.getElementById('acad-institute')?.value || '',
+            qualification: document.getElementById('acad-qualification')?.value || '',
+            gradingSystem: gradingSystem === 'marks' ? 'Marks' : 'CGPA',
+            obtained: document.getElementById('acad-obtained')?.value || '',
+            total: document.getElementById('acad-total')?.value || '',
+            startYear: document.getElementById('acad-start-year')?.value || '',
+            endYear: document.getElementById('acad-end-year')?.value || '',
+            status: 'Pending'
+        };
+
+        if (!record.authority || !record.qualification || !record.institute || !record.startYear || !record.endYear || !record.obtained || !record.total) {
+            return alert("Please fill in all required fields.");
+        }
+
+        if (onSave) onSave(record);
+    };
 
     const handleAddDoc = () => {
         if (!selectedFile) return;
@@ -829,7 +841,7 @@ export const AddAcademicInfoPage = ({ onCancel }) => {
                 <div className="two-column-grid">
                     <div className="field-group">
                         <label className="field-label">Issuing Authority (Board/University) <span className="required">*</span></label>
-                        <select className="field-input field-select">
+                        <select className="field-input field-select" id="acad-authority">
                             <option value="">Select Authority</option>
                             <option value="bise-gujranwala">BISE Gujranwala</option>
                             <option value="bise-lahore">BISE Lahore</option>
@@ -867,7 +879,7 @@ export const AddAcademicInfoPage = ({ onCancel }) => {
                     </div>
                     <div className="field-group">
                         <label className="field-label">Qualification <span className="required">*</span></label>
-                        <input type="text" className="field-input" placeholder="e.g. BSc Computer Science" />
+                        <input type="text" className="field-input" placeholder="e.g. BSc Computer Science" id="acad-qualification" />
                     </div>
                 </div>
 
@@ -896,20 +908,20 @@ export const AddAcademicInfoPage = ({ onCancel }) => {
 
                 <div className="field-group">
                     <label className="field-label">Institute <span className="required">*</span></label>
-                    <input type="text" className="field-input" placeholder="Enter Institute Name" />
+                    <input type="text" className="field-input" placeholder="Enter Institute Name" id="acad-institute" />
                 </div>
 
                 <div className="two-column-grid">
                     <div className="field-group">
                         <label className="field-label">Start Year <span className="required">*</span></label>
-                        <select className="field-input field-select">
+                        <select className="field-input field-select" id="acad-start-year">
                             <option value="">Select Year</option>
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </div>
                     <div className="field-group">
                         <label className="field-label">End Year <span className="required">*</span></label>
-                        <select className="field-input field-select">
+                        <select className="field-input field-select" id="acad-end-year">
                             <option value="">Select Year</option>
                             {years.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
@@ -939,6 +951,7 @@ export const AddAcademicInfoPage = ({ onCancel }) => {
                             className="field-input" 
                             placeholder={gradingSystem === 'marks' ? 'e.g. 950' : 'e.g. 3.5'} 
                             maxLength="5"
+                            id="acad-obtained"
                             onInput={(e) => {
                                 const allowedChars = gradingSystem === 'marks' ? /\D/g : /[^\d.]/g;
                                 e.target.value = e.target.value.replace(allowedChars, '').slice(0, 5);
@@ -952,6 +965,7 @@ export const AddAcademicInfoPage = ({ onCancel }) => {
                             className="field-input" 
                             placeholder={gradingSystem === 'marks' ? 'e.g. 1100' : 'e.g. 4.0'} 
                             maxLength="5"
+                            id="acad-total"
                             onInput={(e) => {
                                 const allowedChars = gradingSystem === 'marks' ? /\D/g : /[^\d.]/g;
                                 e.target.value = e.target.value.replace(allowedChars, '').slice(0, 5);
@@ -1021,7 +1035,7 @@ export const AddAcademicInfoPage = ({ onCancel }) => {
 
             <div className="form-actions">
                 <button className="btn-verify" onClick={onCancel}>Cancel</button>
-                <button className="btn-save" onClick={() => { alert("Academic information saved successfully!"); onCancel(); }}>Save</button>
+                <button className="btn-save" onClick={handleFinalSave}>Save</button>
             </div>
         </div>
     );
@@ -1029,16 +1043,29 @@ export const AddAcademicInfoPage = ({ onCancel }) => {
 /* ═══════════════════════════════════════════════
    PAGE: Admission Listing
    ═══════════════════════════════════════════════ */
-export const AdmissionListingPage = ({ onCreateNew }) => {
-    const [checklistItems, setChecklistItems] = useState([
-        { label: 'Personal Details', status: 'completed' },
-        { label: 'Residence Details', status: 'completed' },
-        { label: 'Emergency Contact', status: 'pending' },
-        { label: 'Guardian Details', status: 'completed' },
-        { label: 'Personal Documents (CNIC/B-Form)', status: 'pending' },
-        { label: 'SSC Certificate', status: 'completed' },
-        { label: 'HSSC Certificate', status: 'pending' },
-    ]);
+export const AdmissionListingPage = ({ applications = [], profileData = {}, academicRecords = [], documents = [], onCreateNew }) => {
+    const [viewApp, setViewApp] = useState(null);
+    
+    const isPersonalComplete = Boolean(profileData.firstName && profileData.fatherName && profileData.cnic);
+    const isResidenceComplete = Boolean(profileData.residence && (profileData.residence['perm-address'] || profileData.residence.address || profileData.residence.sameAsPermanent));
+    const isEmergencyComplete = Boolean(profileData.emergency && profileData.emergency.name && profileData.emergency.phone);
+    const isGuardianComplete = Boolean(profileData.guardian && profileData.guardian.name && profileData.guardian.relation);
+    const isDocsComplete = documents && documents.length > 0;
+    
+    const hasSSC = academicRecords && academicRecords.some(r => r.qualification && (r.qualification.toLowerCase().includes('ssc') || r.qualification.toLowerCase().includes('matric') || r.qualification.toLowerCase().includes('10') || r.qualification.toLowerCase().includes('o level')));
+    const hasHSSC = academicRecords && academicRecords.some(r => r.qualification && (r.qualification.toLowerCase().includes('hssc') || r.qualification.toLowerCase().includes('fsc') || r.qualification.toLowerCase().includes('inter') || r.qualification.toLowerCase().includes('ics') || r.qualification.toLowerCase().includes('a level')));
+
+    const checklistItems = [
+        { label: 'Personal Details', status: isPersonalComplete ? 'completed' : 'pending' },
+        { label: 'Residence Details', status: isResidenceComplete ? 'completed' : 'pending' },
+        { label: 'Emergency Contact', status: isEmergencyComplete ? 'completed' : 'pending' },
+        { label: 'Guardian Details', status: isGuardianComplete ? 'completed' : 'pending' },
+        { label: 'Personal Documents', status: isDocsComplete ? 'completed' : 'pending' },
+        { label: 'SSC / Matric / O-Level', status: hasSSC ? 'completed' : 'pending' },
+        { label: 'HSSC / Inter / A-Level', status: hasHSSC ? 'completed' : 'pending' },
+    ];
+    
+    const completionPercentage = Math.round((checklistItems.filter(i => i.status === 'completed').length / checklistItems.length) * 100);
 
     return (
         <div className="page-container fade-in">
@@ -1048,19 +1075,48 @@ export const AdmissionListingPage = ({ onCreateNew }) => {
             </div>
 
             {/* Checklist Section */}
-            <div className="form-card">
-                <div className="section-header">
-                    <div className="section-header-icon"><CheckIcon /></div>
-                    <h2 className="section-title">Profile Completion Checklist</h2>
+            <div className="form-card" style={{ padding: '0', overflow: 'hidden' }}>
+                <div style={{ background: 'linear-gradient(90deg, #1e293b 0%, #334155 100%)', padding: '20px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.15)', padding: '8px', borderRadius: '8px' }}>
+                            <CheckIcon size={24} color="#fff" />
+                        </div>
+                        <div>
+                            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '600' }}>Profile Completion</h2>
+                            <p style={{ margin: '4px 0 0', opacity: 0.8, fontSize: '0.85rem' }}>Complete all sections off your profile to proceed smoothly</p>
+                        </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{completionPercentage}%</span>
+                        <div style={{ width: '120px', height: '6px', background: 'rgba(255,255,255,0.2)', borderRadius: '3px', marginTop: '6px', overflow: 'hidden' }}>
+                            <div style={{ width: `${completionPercentage}%`, height: '100%', background: '#10b981', transition: 'width 0.5s ease-out' }}></div>
+                        </div>
+                    </div>
                 </div>
-                <div className="checklist-grid">
+                
+                <div style={{ padding: '25px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '15px' }}>
                     {checklistItems.map((item, i) => (
-                        <div key={i} className={`checklist-item ${item.status}`}>
-                            <div className="checklist-icon">
-                                {item.status === 'completed' ? <CheckIcon /> : <AlertCircleIcon />}
+                        <div key={i} style={{ 
+                            display: 'flex', alignItems: 'center', padding: '16px', borderRadius: '12px',
+                            background: item.status === 'completed' ? '#f0fdf4' : '#f8fafc',
+                            border: `1px solid ${item.status === 'completed' ? '#bbf7d0' : '#e2e8f0'}`,
+                            boxShadow: item.status === 'completed' ? '0 4px 6px -1px rgba(22, 163, 74, 0.05)' : 'none',
+                            transition: 'transform 0.2s, box-shadow 0.2s', cursor: 'default'
+                        }} onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)' }} onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}>
+                            <div style={{ 
+                                marginRight: '15px', color: item.status === 'completed' ? '#16a34a' : '#94a3b8', 
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                width: '38px', height: '38px', borderRadius: '50%', 
+                                background: item.status === 'completed' ? '#dcfce7' : '#f1f5f9' 
+                            }}>
+                                {item.status === 'completed' ? <CheckIcon size={20} /> : <AlertCircleIcon size={20} />}
                             </div>
-                            <span className="checklist-label">{item.label}</span>
-                            <span className="checklist-status-text">{item.status.toUpperCase()}</span>
+                            <div style={{ flex: 1 }}>
+                                <span style={{ display: 'block', fontWeight: '600', color: '#1e293b', fontSize: '0.95rem', marginBottom: '2px' }}>{item.label}</span>
+                                <span style={{ fontSize: '0.75rem', fontWeight: '700', color: item.status === 'completed' ? '#16a34a' : '#64748b', letterSpacing: '0.5px' }}>
+                                    {item.status === 'completed' ? 'VERIFIED' : 'PENDING'}
+                                </span>
+                            </div>
                         </div>
                     ))}
                 </div>
@@ -1087,13 +1143,85 @@ export const AdmissionListingPage = ({ onCreateNew }) => {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td colSpan="6" className="empty-row">No application found. Click "Create New Application" to start.</td>
-                            </tr>
+                            {applications.length === 0 ? (
+                                <tr>
+                                    <td colSpan="6" className="empty-row">No application found. Click "Create New Application" to start.</td>
+                                </tr>
+                            ) : applications.map((app, index) => (
+                                <tr key={index}>
+                                    <td>{index + 1}</td>
+                                    <td>{app.appNo}</td>
+                                    <td>{app.appType}</td>
+                                    <td>{app.date}</td>
+                                    <td><span className="status-badge success">{app.status}</span></td>
+                                    <td><button className="btn-verify compact" onClick={() => setViewApp(app)}>View</button></td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            {/* Application Detail View Modal */}
+            {viewApp && (
+                <div className="modal-overlay" style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(15, 23, 42, 0.5)' }}>
+                    <div className="modal-content glass-modal fade-up" style={{ maxWidth: '600px', width: '90%', padding: '0', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                        <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', padding: '25px 30px', color: 'white', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                                <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '10px' }}><ClipboardIcon color="#cbd5e1" /> Application Detail</h3>
+                                <p style={{ margin: '5px 0 0', opacity: 0.8, fontSize: '0.95rem' }}>{viewApp.appNo}</p>
+                            </div>
+                            <button className="close-btn" style={{ color: 'rgba(255,255,255,0.7)', background: 'transparent', border: 'none', cursor: 'pointer', padding: '5px' }} onClick={() => setViewApp(null)}><XIcon size={24} /></button>
+                        </div>
+                        
+                        <div style={{ padding: '30px', background: 'var(--white)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px', paddingBottom: '20px', borderBottom: '1px solid #e2e8f0' }}>
+                                <div>
+                                    <span style={{ display: 'block', color: '#64748b', fontSize: '0.85rem', marginBottom: '5px' }}>Application Type</span>
+                                    <span style={{ fontWeight: '600', color: '#1e293b' }}>{viewApp.appType}</span>
+                                </div>
+                                <div>
+                                    <span style={{ display: 'block', color: '#64748b', fontSize: '0.85rem', marginBottom: '5px' }}>Submission Date</span>
+                                    <span style={{ fontWeight: '600', color: '#1e293b' }}>{viewApp.date}</span>
+                                </div>
+                                <div>
+                                    <span style={{ display: 'block', color: '#64748b', fontSize: '0.85rem', marginBottom: '5px' }}>Status</span>
+                                    <span style={{ display: 'inline-block', background: '#dcfce7', color: '#16a34a', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: '600' }}>{viewApp.status}</span>
+                                </div>
+                            </div>
+
+                            <h4 style={{ margin: '0 0 15px 0', color: '#1e293b', fontSize: '1.1rem' }}>Program Preferences</h4>
+                            
+                            {viewApp.preferences && viewApp.preferences.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                    {viewApp.preferences.map((pref, idx) => (
+                                        <div key={idx} style={{ padding: '15px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '15px' }}>
+                                                <div style={{ background: '#3B5BDB', color: 'white', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.9rem', flexShrink: 0 }}>
+                                                    {pref.sr}
+                                                </div>
+                                                <div>
+                                                    <div style={{ fontWeight: '600', color: '#1e293b', marginBottom: '2px' }}>{pref.program}</div>
+                                                    <div style={{ color: '#64748b', fontSize: '0.85rem' }}>{pref.department}</div>
+                                                </div>
+                                            </div>
+                                            <span style={{ background: '#fef3c7', color: '#d97706', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                                                {pref.preference}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p style={{ color: '#64748b', fontSize: '0.95rem' }}>No preferences recorded.</p>
+                            )}
+                        </div>
+                        
+                        <div style={{ padding: '20px 30px', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0' }}>
+                            <button className="btn-save" onClick={() => setViewApp(null)}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1101,7 +1229,7 @@ export const AdmissionListingPage = ({ onCreateNew }) => {
 /* ═══════════════════════════════════════════════
    PAGE: New Application (Tabs)
    ═══════════════════════════════════════════════ */
-export const AdmissionFormPage = ({ onCancel }) => {
+export const AdmissionFormPage = ({ onCancel, onSubmitApplication }) => {
     const [activeTab, setActiveTab] = useState('detail');
     const [appType, setAppType] = useState('Regular');
     const [preferences, setPreferences] = useState([]);
@@ -1123,6 +1251,18 @@ export const AdmissionFormPage = ({ onCancel }) => {
             department: 'Faculty of Computing & Information Technology'
         });
         setShowModal(true);
+    };
+
+    const handleSubmitApplication = () => {
+        const newApp = {
+            appNo: "APP-2026-" + Math.floor(1000 + Math.random() * 9000),
+            appType: appType,
+            date: new Date().toLocaleDateString('en-GB'),
+            status: 'Submitted',
+            preferences: preferences
+        };
+        if (onSubmitApplication) onSubmitApplication(newApp);
+        setShowSuccessModal(true);
     };
 
     const confirmPreference = () => {
@@ -1153,15 +1293,25 @@ export const AdmissionFormPage = ({ onCancel }) => {
             </div>
 
             {/* Internal Tabs */}
-            <div className="application-tabs">
+            <div style={{ display: 'flex', background: '#f8fafc', padding: '6px', borderRadius: '12px', width: 'fit-content', gap: '8px', marginBottom: '25px', border: '1px solid #e2e8f0', boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.02)' }}>
                 <button 
-                    className={`app-tab ${activeTab === 'detail' ? 'active' : ''}`}
+                    style={{ 
+                        flex: 1, padding: '12px 24px', borderRadius: '8px', border: 'none', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
+                        background: activeTab === 'detail' ? '#ffffff' : 'transparent', 
+                        color: activeTab === 'detail' ? '#3B5BDB' : '#64748b', 
+                        boxShadow: activeTab === 'detail' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)' : 'none' 
+                    }}
                     onClick={() => setActiveTab('detail')}
                 >
                     Application Detail
                 </button>
                 <button 
-                    className={`app-tab ${activeTab === 'preferences' ? 'active' : ''}`}
+                    style={{ 
+                        flex: 1, padding: '12px 24px', borderRadius: '8px', border: 'none', fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', 
+                        background: activeTab === 'preferences' ? '#ffffff' : 'transparent', 
+                        color: activeTab === 'preferences' ? '#3B5BDB' : '#64748b', 
+                        boxShadow: activeTab === 'preferences' ? '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.05)' : 'none' 
+                    }}
                     onClick={() => setActiveTab('preferences')}
                 >
                     Program Preferences
@@ -1272,7 +1422,6 @@ export const AdmissionFormPage = ({ onCancel }) => {
                 </div>
             )}
 
-            {/* Form Footer Actions (for both tabs) */}
             <div className="form-actions" style={{ marginTop: '30px' }}>
                 <button className="btn-verify" onClick={onCancel}>Cancel</button>
                 {activeTab === 'detail' ? (
@@ -1281,7 +1430,7 @@ export const AdmissionFormPage = ({ onCancel }) => {
                     <button 
                         className="btn-save" 
                         disabled={preferences.length === 0}
-                        onClick={() => setShowSuccessModal(true)}
+                        onClick={handleSubmitApplication}
                     >
                         Submit Application
                     </button>
@@ -1312,30 +1461,35 @@ export const AdmissionFormPage = ({ onCancel }) => {
 
             {/* Preference Confirmation Modal */}
             {showModal && (
-                <div className="modal-overlay">
-                    <div className="modal-content glass-modal fade-up">
-                        <div className="modal-header">
-                            <h3>Confirm Program Selection</h3>
-                            <button className="close-btn" onClick={() => setShowModal(false)}><XIcon /></button>
+                <div className="modal-overlay" style={{ backdropFilter: 'blur(8px)', backgroundColor: 'rgba(15, 23, 42, 0.4)' }}>
+                    <div className="modal-content glass-modal fade-up" style={{ maxWidth: '420px', padding: '0', overflow: 'hidden', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.4)', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+                        <div style={{ background: 'linear-gradient(135deg, #3B5BDB 0%, #2563EB 100%)', padding: '25px 20px', textAlign: 'center', color: 'white', position: 'relative' }}>
+                            <button className="close-btn" style={{ position: 'absolute', top: '15px', right: '15px', color: 'rgba(255,255,255,0.7)', background: 'transparent', border: 'none', cursor: 'pointer' }} onClick={() => setShowModal(false)}><XIcon /></button>
+                            <div style={{ background: 'rgba(255,255,255,0.2)', width: '60px', height: '60px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', backdropFilter: 'blur(4px)' }}>
+                                <CheckIcon size={32} />
+                            </div>
+                            <h3 style={{ margin: 0, fontSize: '1.4rem', fontWeight: '600' }}>Confirm Selection</h3>
+                            <p style={{ margin: '8px 0 0', opacity: 0.9, fontSize: '0.9rem' }}>Please review your program preference</p>
                         </div>
-                        <div className="modal-body">
-                            <div className="modal-info-item">
-                                <label>Department:</label>
-                                <span>{pendingPref?.department}</span>
+                        <div style={{ padding: '25px 30px', background: 'var(--white)' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px dashed #e2e8f0' }}>
+                                    <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Department</span>
+                                    <span style={{ fontWeight: '600', color: '#1e293b', textAlign: 'right', maxWidth: '60%' }}>{pendingPref?.department}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '12px', borderBottom: '1px dashed #e2e8f0' }}>
+                                    <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Selected Program</span>
+                                    <span style={{ fontWeight: '700', color: '#3B5BDB', textAlign: 'right', maxWidth: '60%' }}>{pendingPref?.program}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ color: '#64748b', fontSize: '0.9rem' }}>Preference Order</span>
+                                    <span style={{ background: '#fef3c7', color: '#d97706', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>{pendingPref?.preference}</span>
+                                </div>
                             </div>
-                            <div className="modal-info-item">
-                                <label>Selected Program:</label>
-                                <span className="highlight-text">{pendingPref?.program}</span>
-                            </div>
-                            <div className="modal-info-item">
-                                <label>Preference Order:</label>
-                                <span className="highlight-text">{pendingPref?.preference}</span>
-                            </div>
-                            <p className="modal-note">Please confirm your selection. Added preferences will be considered during the admission processing.</p>
                         </div>
-                        <div className="modal-footer">
-                            <button className="btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
-                            <button className="btn-primary" onClick={confirmPreference}>Save Preference</button>
+                        <div style={{ padding: '20px 30px 30px', background: 'var(--white)', display: 'flex', gap: '15px' }}>
+                            <button style={{ flex: 1, padding: '12px', background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setShowModal(false)} onMouseOver={(e) => {e.currentTarget.style.background = '#e2e8f0'; e.currentTarget.style.color = '#1e293b';}} onMouseOut={(e) => {e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#64748b';}}>Cancel</button>
+                            <button style={{ flex: 1, padding: '12px', background: '#3B5BDB', color: '#ffffff', border: 'none', borderRadius: '8px', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 4px 12px rgba(59, 91, 219, 0.3)' }} onClick={confirmPreference} onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-2px)'} onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}>Confirm & Save</button>
                         </div>
                     </div>
                 </div>
@@ -1388,7 +1542,7 @@ export const ChangePasswordPage = () => {
 /* ═══════════════════════════════════════════════
    PAGE: Student Dashboard (Home)
    ═══════════════════════════════════════════════ */
-export const DashboardHomePage = ({ onNavigate, studentInfo }) => {
+export const DashboardHomePage = ({ onNavigate, studentName }) => {
     const stats = [
         { label: 'Registration Status', value: 'Verified Student', icon: <CheckIcon />, color: '#10b981', bg: '#f0fdf4' },
         { label: 'Profile Completion', value: '75%', icon: <UserIcon size={20} />, color: '#3b82f6', bg: '#eff6ff', progress: 75 },
@@ -1406,7 +1560,7 @@ export const DashboardHomePage = ({ onNavigate, studentInfo }) => {
             {/* Welcome Banner */}
             <div className="welcome-banner fade-up">
                 <div className="welcome-text">
-                    <h1>Welcome Back, <span className="highlight-text-welcome">{studentInfo?.id || 'Student'}</span> 👋</h1>
+                    <h1>Welcome, <span className="highlight-text-welcome">{studentName || 'Student'}</span> 👋</h1>
                     <p>Track your student portal status and upcoming admission activities from this personalized dashboard.</p>
                 </div>
                 <div className="welcome-action">

@@ -105,24 +105,93 @@ const AddressFields = ({ prefix = '' }) => (
    MAIN DASHBOARD
    ═══════════════════════════════════════════════ */
 const Dashboard = ({ setView, user }) => {
-    const [activeTab, setActiveTab] = useState('personal');
+    const storagePrefix = user?.id || user?.name || 'demo';
+
+    const [activeTab, setActiveTab] = useState(() => {
+        return localStorage.getItem(`${storagePrefix}_activeTab`) || 'personal';
+    });
     const [profileData, setProfileData] = useState(() => {
-        const saved = localStorage.getItem('profileData');
-        return saved ? JSON.parse(saved) : {
-            firstName: '', lastName: '', fatherName: '', username: '', dob: '', religion: '', 
-            cellPhone: '', disability: false, gender: '', cnic: '', maritalStatus: '', 
+        const saved = localStorage.getItem(`${storagePrefix}_profileData`);
+        if (saved) return JSON.parse(saved);
+        
+        const nameParts = (user?.name || '').trim().split(' ');
+        const sysFirstName = nameParts[0] || '';
+        const sysLastName = nameParts.slice(1).join(' ') || '';
+        
+        return {
+            firstName: sysFirstName, lastName: sysLastName, fatherName: '', username: '', dob: '', religion: '', 
+            cellPhone: '', disability: false, gender: '', cnic: user?.id || '', maritalStatus: '', 
             nationality: '', email: '', profileImage: null,
             residence: {}, emergency: {}, guardian: {}
         };
     });
 
+    const [academicRecords, setAcademicRecords] = useState(() => {
+        const saved = localStorage.getItem(`${storagePrefix}_academicRecords`);
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    const [applications, setApplications] = useState(() => {
+        const saved = localStorage.getItem(`${storagePrefix}_applications`);
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    const [documents, setDocuments] = useState(() => {
+        const saved = localStorage.getItem(`${storagePrefix}_uploadedDocuments`);
+        return saved ? JSON.parse(saved) : [];
+    });
+
     React.useEffect(() => {
-        localStorage.setItem('profileData', JSON.stringify(profileData));
-    }, [profileData]);
-    const [currentPage, setCurrentPage] = useState('home');
+        localStorage.setItem(`${storagePrefix}_profileData`, JSON.stringify(profileData));
+    }, [profileData, storagePrefix]);
+
+    React.useEffect(() => {
+        localStorage.setItem(`${storagePrefix}_academicRecords`, JSON.stringify(academicRecords));
+    }, [academicRecords, storagePrefix]);
+
+    React.useEffect(() => {
+        localStorage.setItem(`${storagePrefix}_applications`, JSON.stringify(applications));
+    }, [applications, storagePrefix]);
+
+    React.useEffect(() => {
+        localStorage.setItem(`${storagePrefix}_uploadedDocuments`, JSON.stringify(documents));
+    }, [documents, storagePrefix]);
+
+    React.useEffect(() => {
+        localStorage.setItem(`${storagePrefix}_activeTab`, activeTab);
+    }, [activeTab, storagePrefix]);
+
+    const [currentPage, setCurrentPage] = useState(() => {
+        return localStorage.getItem(`${storagePrefix}_currentPage`) || 'home';
+    });
+
+    React.useEffect(() => {
+        localStorage.setItem(`${storagePrefix}_currentPage`, currentPage);
+    }, [currentPage, storagePrefix]);
     const [profileOpen, setProfileOpen] = useState(false);
     const [admissionOpen, setAdmissionOpen] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchFocused, setSearchFocused] = useState(false);
     const [studentInfo] = useState(user || { id: 'MJ8012002', name: studentInfo?.name || 'Student Applicant' });
+
+    const searchablePages = [
+        { title: 'Dashboard Home', page: 'home', keywords: 'welcome progress notifications start dashboard' },
+        { title: 'Personal Details', page: 'profile', subTab: 'personal', keywords: 'profile name cnic gender dob religion cell email' },
+        { title: 'Residence Details', page: 'profile', subTab: 'residence', keywords: 'address house city state country province zip region location' },
+        { title: 'Emergency Contact', page: 'profile', subTab: 'emergency', keywords: 'phone contact emergency relative relation' },
+        { title: 'Guardian Details', page: 'profile', subTab: 'guardian', keywords: 'father guardian cnic income occupation parent' },
+        { title: 'Personal Documents', page: 'personal-docs', keywords: 'upload photos cnic bform documents files' },
+        { title: 'Academic Information', page: 'academic-info', keywords: 'ssc hssc matric inter degree certificate school college result' },
+        { title: 'Add Academic Record', page: 'add-academic', keywords: 'new academic degree qualification add' },
+        { title: 'Application List', page: 'application-list', keywords: 'my applications list status checklist completion' },
+        { title: 'New Application', page: 'application-form', subTab: 'detail', keywords: 'create new apply application form details application type' },
+        { title: 'Program Preferences', page: 'application-form', subTab: 'preferences', keywords: 'preference degree program bs cs it department priority selection' }
+    ];
+
+    const searchResults = searchTerm ? searchablePages.filter(p => 
+        p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (p.keywords && p.keywords.toLowerCase().includes(searchTerm.toLowerCase()))
+    ) : [];
 
     const handleProfileChange = (key, value) => {
         setProfileData(prev => ({ ...prev, [key]: value }));
@@ -130,6 +199,13 @@ const Dashboard = ({ setView, user }) => {
 
     const handleLogout = (e) => {
         e.preventDefault();
+        // Clear global session
+        localStorage.removeItem('appView');
+        localStorage.removeItem('currentUser');
+        // Clear this user's specific navigation state (optional, but cleaner)
+        localStorage.removeItem(`${storagePrefix}_currentPage`);
+        localStorage.removeItem(`${storagePrefix}_activeTab`);
+        
         setView('landing');
     };
 
@@ -152,14 +228,16 @@ const Dashboard = ({ setView, user }) => {
         }
     };
 
+    const displayFullName = (`${profileData.firstName || ''} ${profileData.lastName || ''}`).trim() || studentInfo.name;
+
     return (
         <div className="dashboard-layout fade-in">
             {/* ── Sidebar ── */}
             <aside className="dashboard-sidebar">
                 <div className="sidebar-user-card compact-card">
-                    <img src={profileData.profileImage || "/student-avatar.jpg"} alt="Student" className="sidebar-avatar-compact" onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${studentInfo.name}&background=3B5BDB&color=fff`; }} />
+                    <img src={profileData.profileImage || "/student-avatar.jpg"} alt="Student" className="sidebar-avatar-compact" onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${displayFullName}&background=3B5BDB&color=fff`; }} />
                     <div className="sidebar-user-info">
-                        <div className="sidebar-user-id-compact">{studentInfo.name}</div>
+                        <div className="sidebar-user-id-compact">{displayFullName}</div>
                         <div className="sidebar-user-role-compact">Student Applicant</div>
                     </div>
                 </div>
@@ -201,15 +279,48 @@ const Dashboard = ({ setView, user }) => {
                             Campus 360
                         </div>
                     </div>
-                    <div className="header-center">
+                    <div className="header-center" style={{ position: 'relative' }}>
                         <div className="search-bar">
                             <span style={{ color: '#9ca3af', display: 'flex' }}><SearchIcon /></span>
-                            <input type="text" placeholder="Search..." className="search-input" />
+                            <input 
+                                type="text" 
+                                placeholder="Search pages..." 
+                                className="search-input" 
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                onFocus={() => setSearchFocused(true)}
+                                onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                            />
                         </div>
+                        {searchFocused && searchTerm && (
+                            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)', marginTop: '8px', zIndex: 100, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                                {searchResults.length > 0 ? (
+                                    searchResults.map((res, i) => (
+                                        <div 
+                                            key={i} 
+                                            style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', borderBottom: i < searchResults.length - 1 ? '1px solid #f1f5f9' : 'none', color: '#1e293b', transition: 'background 0.2s' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                            onMouseDown={(e) => { 
+                                                // use onMouseDown instead of onClick so it fires before blur
+                                                setCurrentPage(res.page); 
+                                                if (res.subTab) setActiveTab(res.subTab); 
+                                                setSearchTerm(''); 
+                                            }}
+                                        >
+                                            <span style={{ color: '#3B5BDB' }}><SearchIcon /></span>
+                                            <span style={{ fontWeight: '500', fontSize: '0.95rem' }}>{res.title}</span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div style={{ padding: '15px', textAlign: 'center', color: '#64748b', fontSize: '0.9rem' }}>No matching pages found</div>
+                                )}
+                            </div>
+                        )}
                     </div>
                     <div className="header-right">
                         <div className="header-profile" onClick={() => setProfileOpen(!profileOpen)}>
-                            <img src={profileData.profileImage || "/student-avatar.jpg"} alt={studentInfo.name} title={studentInfo.name} className="header-avatar" onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${studentInfo.name}&background=3B5BDB&color=fff`; }} />
+                            <img src={profileData.profileImage || "/student-avatar.jpg"} alt={displayFullName} title={displayFullName} className="header-avatar" onError={(e) => { e.target.src = `https://ui-avatars.com/api/?name=${displayFullName}&background=3B5BDB&color=fff`; }} />
                             <div className={`dropdown-menu ${profileOpen ? 'show' : ''}`}>
                                 <a href="#" className="dropdown-item" onClick={(e) => { e.preventDefault(); setCurrentPage('profile'); setProfileOpen(false); }}><UserIcon /> Profile</a>
                                 <div className="dropdown-divider"></div>
@@ -224,7 +335,7 @@ const Dashboard = ({ setView, user }) => {
 
                 {/* Content Area */}
                 <div className="dashboard-content-wrapper">
-                    {currentPage === 'home' && <DashboardHomePage onNavigate={(p) => setCurrentPage(p)} studentInfo={studentInfo} />}
+                    {currentPage === 'home' && <DashboardHomePage onNavigate={(p) => setCurrentPage(p)} studentName={displayFullName} />}
                     {currentPage === 'profile' && (
                         <>
                             <div className="page-header-minimal">
@@ -255,14 +366,23 @@ const Dashboard = ({ setView, user }) => {
                             {renderActiveTab()}
                         </>
                     )}
-                    {currentPage === 'personal-docs' && <PersonalDocumentsPage />}
-                    {currentPage === 'academic-info' && <AcademicInformationPage onAddClick={() => setCurrentPage('add-academic')} />}
-                    {currentPage === 'add-academic' && <AddAcademicInfoPage onCancel={() => setCurrentPage('academic-info')} />}
+                    {currentPage === 'personal-docs' && <PersonalDocumentsPage documents={documents} setDocuments={setDocuments} />}
+                    {currentPage === 'academic-info' && <AcademicInformationPage records={academicRecords} onAddClick={() => setCurrentPage('add-academic')} />}
+                    {currentPage === 'add-academic' && <AddAcademicInfoPage onSave={(newRecord) => { setAcademicRecords([...academicRecords, newRecord]); setCurrentPage('academic-info'); }} onCancel={() => setCurrentPage('academic-info')} />}
                     {currentPage === 'application-list' && (
-                        <AdmissionListingPage onCreateNew={() => setCurrentPage('application-form')} />
+                        <AdmissionListingPage 
+                            applications={applications} 
+                            profileData={profileData}
+                            academicRecords={academicRecords}
+                            documents={documents}
+                            onCreateNew={() => setCurrentPage('application-form')} 
+                        />
                     )}
                     {currentPage === 'application-form' && (
-                        <AdmissionFormPage onCancel={() => setCurrentPage('application-list')} />
+                        <AdmissionFormPage 
+                            onSubmitApplication={(app) => setApplications([...applications, app])}
+                            onCancel={() => setCurrentPage('application-list')} 
+                        />
                     )}
                     {currentPage === 'change-password' && <ChangePasswordPage />}
                 </div>

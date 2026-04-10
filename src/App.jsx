@@ -2,6 +2,7 @@ import { loginUser } from './services/authService';
 import { useAuth } from './context/AuthContext';
 import React, { useState, useEffect } from 'react';
 import Dashboard from './Dashboard';
+import DobInput from './components/DobInput';
 
 // --- Components ---
 
@@ -370,7 +371,7 @@ const handleLogin = async (e) => {
         if (mockUserStr) {
             const mockUser = JSON.parse(mockUserStr);
             if ((mockUser.email === formData.email || mockUser.email.split('@')[0] === formData.email) && mockUser.password === formData.password) {
-                setUser({ id: mockUser.name, name: mockUser.name });
+                setUser({ id: mockUser.id || mockUser.name, name: mockUser.name });
                 setView('dashboard');
                 setLoading(false);
                 return;
@@ -384,7 +385,8 @@ const handleLogin = async (e) => {
     } catch (error) {
         // Front-end prototyping bypass: if no back-end is available and no mock user matched,
         // we still allow the login to proceed so the dashboard can be viewed.
-        setUser({ id: "Demo Student", name: "Demo Student" });
+        const fallbackName = formData.email ? formData.email.split('@')[0] : "Demo Student";
+        setUser({ id: formData.email || "Demo Student", name: fallbackName });
         setView('dashboard');
     } finally {
         setLoading(false);
@@ -557,7 +559,7 @@ const SignupPage = ({ setView, setUser }) => {
         
         const fullName = `${formData.firstName} ${formData.lastName}`;
         // Store account locally so login works before backend is fully integrated
-        localStorage.setItem('mockUser', JSON.stringify({ email: formData.email, password: formData.password, name: fullName }));
+        localStorage.setItem('mockUser', JSON.stringify({ id: formData.cnic || formData.email, email: formData.email, password: formData.password, name: fullName }));
         alert("Registration successful! Please login with your new account.");
         setView('login');
     };
@@ -648,18 +650,11 @@ const SignupPage = ({ setView, setUser }) => {
                                         </select>
                                     </div>
                                 </div>
-                                <div className="form-group">
-                                    <label>Date of Birth</label>
-                                    <div className="input-wrapper">
-                                        <div className="input-icon"><CalendarIcon /></div>
-                                        <input 
-                                            type="date" 
-                                            className="form-input-with-icon" 
-                                            required 
-                                            onChange={(e) => setFormData({...formData, dob: e.target.value})}
-                                        />
-                                    </div>
-                                </div>
+                                <DobInput 
+                                    value={formData.dob}
+                                    onChange={(date) => setFormData({...formData, dob: date})}
+                                    required={true}
+                                />
 
                                 {/* Row 3 - CNIC */}
                                 <div className="form-group form-row-full">
@@ -670,7 +665,12 @@ const SignupPage = ({ setView, setUser }) => {
                                             className="form-input-with-icon" 
                                             placeholder="0000000000000" 
                                             style={{ paddingLeft: '20px' }}
-                                            onChange={(e) => setFormData({...formData, cnic: e.target.value})}
+                                            maxLength="13"
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                e.target.value = val;
+                                                setFormData({...formData, cnic: val});
+                                            }}
                                         />
                                     </div>
                                     <p className="helper-text">Enter CNIC without dashes (0000000000000)</p>
@@ -686,9 +686,14 @@ const SignupPage = ({ setView, setUser }) => {
                                         <input 
                                             type="tel" 
                                             className="form-input-with-icon" 
-                                            placeholder="300 1234567" 
+                                            placeholder="3001234567" 
                                             style={{ paddingLeft: '70px' }}
-                                            onChange={(e) => setFormData({...formData, phone: '+92' + e.target.value})}
+                                            maxLength="11"
+                                            onChange={(e) => {
+                                                const val = e.target.value.replace(/\D/g, '');
+                                                e.target.value = val;
+                                                setFormData({...formData, phone: '+92' + val});
+                                            }}
                                         />
                                     </div>
                                 </div>
@@ -801,14 +806,27 @@ const HistoryPage = ({ setView }) => {
 };
 
 const App = () => {
-    const [view, setView] = useState('landing');
-    const [user, setUser] = useState({ id: 'MJ8012002', name: 'Student Applicant' });
+    const [view, setView] = useState(() => {
+        return localStorage.getItem('appView') || 'landing';
+    });
+    const [user, setUser] = useState(() => {
+        const saved = localStorage.getItem('currentUser');
+        return saved ? JSON.parse(saved) : { id: 'MJ8012002', name: 'Student Applicant' };
+    });
+
+    useEffect(() => {
+        localStorage.setItem('appView', view);
+    }, [view]);
+
+    useEffect(() => {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+    }, [user]);
 
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [view]);
 
-    if (view === 'dashboard') return <Dashboard setView={setView} user={user} />;
+    if (view === 'dashboard') return <Dashboard key={user.id} setView={setView} user={user} />;
     if (view === 'login') return <LoginPage setView={setView} setUser={setUser} />;
     if (view === 'signup') return <SignupPage setView={setView} setUser={setUser} />;
     if (view === 'forgot-password') return <ForgotPasswordPage setView={setView} />;
